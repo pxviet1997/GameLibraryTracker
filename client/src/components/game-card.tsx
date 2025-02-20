@@ -1,6 +1,11 @@
 import { type Game } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
+import { Trash2 } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface GameCardProps {
   game: Game;
@@ -16,7 +21,25 @@ const fallbackCovers = [
 ];
 
 export default function GameCard({ game }: GameCardProps) {
+  const { toast } = useToast();
   const coverUrl = game.coverUrl || fallbackCovers[game.id % fallbackCovers.length];
+
+  const { mutate: deleteGame, isPending } = useMutation({
+    mutationFn: async () => {
+      await apiRequest("DELETE", `/api/games/${game.id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/games"] });
+      toast({ title: "Game deleted successfully" });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to delete game",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow">
@@ -28,7 +51,17 @@ export default function GameCard({ game }: GameCardProps) {
         />
       </div>
       <CardHeader>
-        <CardTitle>{game.name}</CardTitle>
+        <div className="flex justify-between items-start">
+          <CardTitle>{game.name}</CardTitle>
+          <Button
+            variant="destructive"
+            size="icon"
+            onClick={() => deleteGame()}
+            disabled={isPending}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-2 text-sm text-muted-foreground">

@@ -29,6 +29,22 @@ export async function registerRoutes(app: Express) {
     }
   });
 
+  app.delete("/api/games/:id", async (req, res) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid game ID" });
+      return;
+    }
+
+    try {
+      await storage.deleteGame(id);
+      res.sendStatus(200);
+    } catch (error) {
+      console.error('Error deleting game:', error);
+      res.status(404).json({ error: "Game not found" });
+    }
+  });
+
   app.get("/api/igdb/search", async (req, res) => {
     const query = req.query.q;
     if (typeof query !== "string" || query.length < 2) {

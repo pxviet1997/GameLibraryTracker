@@ -3,6 +3,7 @@ import { games, type Game, type InsertGame } from "@shared/schema";
 export interface IStorage {
   getGames(): Promise<Game[]>;
   addGame(game: InsertGame): Promise<Game>;
+  deleteGame(id: number): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -63,6 +64,13 @@ export class MemStorage implements IStorage {
     };
     this.games.set(id, game);
     return game;
+  }
+
+  async deleteGame(id: number): Promise<void> {
+    if (!this.games.has(id)) {
+      throw new Error('Game not found');
+    }
+    this.games.delete(id);
   }
 }
 
