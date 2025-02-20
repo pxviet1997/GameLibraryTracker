@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { insertGameSchema, type InsertGame, platformOptions } from "@shared/schema";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -9,16 +9,35 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Loader2 } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
+interface IGDBGame {
+  id: number;
+  name: string;
+  cover?: { url: string };
+  first_release_date?: number;
+  summary?: string;
+}
 
 export default function AddGame() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const [search, setSearch] = useState("");
+  const [selectedGame, setSelectedGame] = useState<IGDBGame | null>(null);
 
   const form = useForm<InsertGame>({
     resolver: zodResolver(insertGameSchema),
     defaultValues: {
       purchaseDate: new Date(),
     },
+  });
+
+  const { data: searchResults = [], isLoading: isSearching } = useQuery<IGDBGame[]>({
+    queryKey: ["/api/igdb/search", search],
+    enabled: search.length > 2,
   });
 
   const { mutate, isPending } = useMutation({
@@ -41,11 +60,76 @@ export default function AddGame() {
     },
   });
 
+  const handleGameSelect = (game: IGDBGame) => {
+    setSelectedGame(game);
+    setSearch("");
+    form.setValue("name", game.name);
+    if (game.first_release_date) {
+      form.setValue("releaseDate", new Date(game.first_release_date * 1000));
+    }
+    if (game.cover?.url) {
+      form.setValue("coverUrl", game.cover.url);
+    }
+    if (game.summary) {
+      form.setValue("description", game.summary);
+    }
+    form.setValue("igdbId", game.id);
+  };
+
   return (
     <div className="max-w-xl mx-auto space-y-8">
       <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
         Add New Game
       </h1>
+
+      <div className="relative">
+        <Input
+          placeholder="Search for a game..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full"
+        />
+
+        {search.length > 2 && (
+          <Card className="absolute w-full mt-1 z-50">
+            <CardContent className="p-2">
+              <ScrollArea className="h-[300px]">
+                {isSearching ? (
+                  <div className="flex items-center justify-center p-4">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  </div>
+                ) : searchResults.length > 0 ? (
+                  searchResults.map((game) => (
+                    <div
+                      key={game.id}
+                      className="flex items-center gap-4 p-2 hover:bg-accent cursor-pointer rounded-lg"
+                      onClick={() => handleGameSelect(game)}
+                    >
+                      {game.cover && (
+                        <img
+                          src={game.cover.url}
+                          alt={game.name}
+                          className="w-16 h-16 object-cover rounded"
+                        />
+                      )}
+                      <div>
+                        <h3 className="font-medium">{game.name}</h3>
+                        {game.first_release_date && (
+                          <p className="text-sm text-muted-foreground">
+                            Released: {new Date(game.first_release_date * 1000).getFullYear()}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-center p-4 text-muted-foreground">No games found</p>
+                )}
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit((data) => mutate(data))} className="space-y-6">
