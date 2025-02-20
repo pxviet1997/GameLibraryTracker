@@ -21,8 +21,23 @@ export default function Home() {
     .sort((a, b) => {
       const aValue = a[sortField];
       const bValue = b[sortField];
-      const order = sortOrder === "asc" ? 1 : -1;
-      return aValue < bValue ? -order : order;
+
+      // Handle null values in sorting
+      if (aValue === null && bValue === null) return 0;
+      if (aValue === null) return sortOrder === "asc" ? 1 : -1;
+      if (bValue === null) return sortOrder === "asc" ? -1 : 1;
+
+      // For dates, convert to timestamps for comparison
+      if (sortField === "purchaseDate" || sortField === "releaseDate") {
+        const aTime = new Date(aValue as string).getTime();
+        const bTime = new Date(bValue as string).getTime();
+        return sortOrder === "asc" ? aTime - bTime : bTime - aTime;
+      }
+
+      // For strings (name)
+      return sortOrder === "asc" 
+        ? String(aValue).localeCompare(String(bValue))
+        : String(bValue).localeCompare(String(aValue));
     });
 
   return (

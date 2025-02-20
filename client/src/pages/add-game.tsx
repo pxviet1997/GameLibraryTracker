@@ -17,13 +17,18 @@ export default function AddGame() {
   const form = useForm<InsertGame>({
     resolver: zodResolver(insertGameSchema),
     defaultValues: {
-      purchaseDate: new Date().toISOString(),
+      purchaseDate: new Date(),
     },
   });
 
   const { mutate, isPending } = useMutation({
     mutationFn: async (data: InsertGame) => {
-      const res = await apiRequest("POST", "/api/games", data);
+      const formattedData = {
+        ...data,
+        purchaseDate: data.purchaseDate.toISOString(),
+        releaseDate: data.releaseDate?.toISOString(),
+      };
+      const res = await apiRequest("POST", "/api/games", formattedData);
       return res.json();
     },
     onSuccess: () => {
@@ -90,7 +95,12 @@ export default function AddGame() {
               <FormItem>
                 <FormLabel>Purchase Date</FormLabel>
                 <FormControl>
-                  <Input type="date" {...field} value={field.value?.split("T")[0]} />
+                  <Input 
+                    type="date" 
+                    {...field} 
+                    value={field.value instanceof Date ? field.value.toISOString().split('T')[0] : ''} 
+                    onChange={(e) => field.onChange(new Date(e.target.value))}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
