@@ -3,6 +3,7 @@ import { createServer } from "http";
 import { storage } from "./storage";
 import { insertGameSchema } from "@shared/schema";
 import { searchGames } from "./igdb";
+import { log } from "./vite";
 
 export async function registerRoutes(app: Express) {
   app.get("/api/games", async (_req, res) => {
@@ -22,14 +23,21 @@ export async function registerRoutes(app: Express) {
   });
 
   app.get("/api/igdb/search", async (req, res) => {
-    const { q } = req.query;
-    if (typeof q !== "string") {
-      res.status(400).json({ error: "Query parameter required" });
+    const query = req.query.q;
+    if (typeof query !== "string" || query.length < 2) {
+      res.status(400).json({ error: "Query parameter must be a string with at least 2 characters" });
       return;
     }
 
-    const games = await searchGames(q);
-    res.json(games);
+    try {
+      log(`Searching IGDB for: ${query}`);
+      const games = await searchGames(query);
+      log(`Found ${games.length} games for query: ${query}`);
+      res.json(games);
+    } catch (error) {
+      console.error("IGDB search error:", error);
+      res.status(500).json({ error: "Failed to search games" });
+    }
   });
 
   return createServer(app);

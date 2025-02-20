@@ -37,7 +37,16 @@ export default function AddGame() {
 
   const { data: searchResults = [], isLoading: isSearching } = useQuery<IGDBGame[]>({
     queryKey: ["/api/igdb/search", search],
-    enabled: search.length > 2,
+    queryFn: async () => {
+      if (search.length < 3) return [];
+      const res = await fetch(`/api/igdb/search?q=${encodeURIComponent(search)}`);
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Failed to search games");
+      }
+      return res.json();
+    },
+    enabled: search.length >= 3,
   });
 
   const { mutate, isPending } = useMutation({
@@ -179,10 +188,10 @@ export default function AddGame() {
               <FormItem>
                 <FormLabel>Purchase Date</FormLabel>
                 <FormControl>
-                  <Input 
-                    type="date" 
-                    {...field} 
-                    value={field.value instanceof Date ? field.value.toISOString().split('T')[0] : ''} 
+                  <Input
+                    type="date"
+                    {...field}
+                    value={field.value instanceof Date ? field.value.toISOString().split('T')[0] : ''}
                     onChange={(e) => field.onChange(new Date(e.target.value))}
                   />
                 </FormControl>
