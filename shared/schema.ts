@@ -13,7 +13,15 @@ export const games = pgTable("games", {
   description: text("description"),
 });
 
-export const insertGameSchema = createInsertSchema(games).omit({ id: true });
+export const insertGameSchema = createInsertSchema(games, {
+  name: z.string().min(1, "Name is required"),
+  platform: z.string().min(1, "Platform is required"),
+  purchaseDate: z.date(),
+  releaseDate: z.date().nullable(),
+  igdbId: z.number().nullable(),
+  coverUrl: z.string().nullable(),
+  description: z.string().nullable(),
+}).omit({ id: true });
 
 export type InsertGame = z.infer<typeof insertGameSchema>;
 export type Game = typeof games.$inferSelect;

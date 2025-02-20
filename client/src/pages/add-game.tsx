@@ -22,6 +22,13 @@ interface IGDBGame {
   summary?: string;
 }
 
+// Helper function to detect platform based on IGDB data
+function detectPlatform(game: IGDBGame): string {
+  // For now, default to PC as we don't have platform data from IGDB
+  // You could enhance this by adding platform data to the IGDB query
+  return "PC";
+}
+
 export default function AddGame() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
@@ -31,7 +38,13 @@ export default function AddGame() {
   const form = useForm<InsertGame>({
     resolver: zodResolver(insertGameSchema),
     defaultValues: {
+      name: "",
+      platform: "",
       purchaseDate: new Date(),
+      releaseDate: null,
+      coverUrl: null,
+      description: null,
+      igdbId: null,
     },
   });
 
@@ -54,7 +67,7 @@ export default function AddGame() {
       const formattedData = {
         ...data,
         purchaseDate: data.purchaseDate.toISOString(),
-        releaseDate: data.releaseDate?.toISOString(),
+        releaseDate: data.releaseDate?.toISOString() || null,
       };
       const res = await apiRequest("POST", "/api/games", formattedData);
       return res.json();
@@ -64,15 +77,23 @@ export default function AddGame() {
       toast({ title: "Game added successfully" });
       navigate("/");
     },
-    onError: () => {
-      toast({ title: "Failed to add game", variant: "destructive" });
+    onError: (error) => {
+      toast({ 
+        title: "Failed to add game", 
+        description: error.message,
+        variant: "destructive" 
+      });
     },
   });
 
   const handleGameSelect = (game: IGDBGame) => {
     setSelectedGame(game);
     setSearch("");
+
+    // Set form values
     form.setValue("name", game.name);
+    form.setValue("platform", detectPlatform(game));
+
     if (game.first_release_date) {
       form.setValue("releaseDate", new Date(game.first_release_date * 1000));
     }
@@ -201,7 +222,14 @@ export default function AddGame() {
           />
 
           <Button type="submit" disabled={isPending} className="w-full">
-            Add Game
+            {isPending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Adding...
+              </>
+            ) : (
+              'Add Game'
+            )}
           </Button>
         </form>
       </Form>
