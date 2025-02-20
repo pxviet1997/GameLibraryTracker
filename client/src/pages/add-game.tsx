@@ -66,11 +66,13 @@ export default function AddGame() {
     mutationFn: async (data: InsertGame) => {
       const formattedData = {
         ...data,
-        purchaseDate: new Date(data.purchaseDate).toISOString(),
-        releaseDate: data.releaseDate ? new Date(data.releaseDate).toISOString() : null,
-        igdbId: data.igdbId || null,
-        coverUrl: data.coverUrl || null,
-        description: data.description || null,
+        name: data.name.trim(),
+        platform: data.platform,
+        purchaseDate: data.purchaseDate,
+        releaseDate: data.releaseDate,
+        igdbId: data.igdbId ?? null,
+        coverUrl: data.coverUrl ?? null,
+        description: data.description ?? null
       };
       const res = await apiRequest("POST", "/api/games", formattedData);
       return res.json();

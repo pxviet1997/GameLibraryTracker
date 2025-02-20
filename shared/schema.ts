@@ -16,8 +16,15 @@ export const games = pgTable("games", {
 export const insertGameSchema = createInsertSchema(games, {
   name: z.string().min(1, "Name is required"),
   platform: z.string().min(1, "Platform is required"),
-  purchaseDate: z.date(),
-  releaseDate: z.date().nullable(),
+  purchaseDate: z
+    .string()
+    .or(z.date())
+    .transform((val) => new Date(val)),
+  releaseDate: z
+    .string()
+    .or(z.date())
+    .nullish()
+    .transform((val) => (val ? new Date(val) : null)),
   igdbId: z.number().nullable(),
   coverUrl: z.string().nullable(),
   description: z.string().nullable(),
