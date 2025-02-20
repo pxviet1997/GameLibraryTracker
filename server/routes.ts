@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { insertGameSchema } from "@shared/schema";
 import { searchGames } from "./igdb";
 import { log } from "./vite";
+import { fromZodError } from "zod-validation-error";
 
 export async function registerRoutes(app: Express) {
   app.get("/api/games", async (_req, res) => {
@@ -14,12 +15,18 @@ export async function registerRoutes(app: Express) {
   app.post("/api/games", async (req, res) => {
     const result = insertGameSchema.safeParse(req.body);
     if (!result.success) {
-      res.status(400).json({ error: "Invalid game data" });
+      const validationError = fromZodError(result.error);
+      res.status(400).json({ error: validationError.message });
       return;
     }
 
-    const game = await storage.addGame(result.data);
-    res.json(game);
+    try {
+      const game = await storage.addGame(result.data);
+      res.json(game);
+    } catch (error) {
+      console.error('Error adding game:', error);
+      res.status(500).json({ error: "Failed to add game" });
+    }
   });
 
   app.get("/api/igdb/search", async (req, res) => {

@@ -66,8 +66,11 @@ export default function AddGame() {
     mutationFn: async (data: InsertGame) => {
       const formattedData = {
         ...data,
-        purchaseDate: data.purchaseDate.toISOString(),
-        releaseDate: data.releaseDate?.toISOString() || null,
+        purchaseDate: new Date(data.purchaseDate).toISOString(),
+        releaseDate: data.releaseDate ? new Date(data.releaseDate).toISOString() : null,
+        igdbId: data.igdbId || null,
+        coverUrl: data.coverUrl || null,
+        description: data.description || null,
       };
       const res = await apiRequest("POST", "/api/games", formattedData);
       return res.json();
@@ -77,7 +80,7 @@ export default function AddGame() {
       toast({ title: "Game added successfully" });
       navigate("/");
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast({ 
         title: "Failed to add game", 
         description: error.message,
