@@ -26,7 +26,7 @@ interface IGDBGame {
 function detectPlatform(game: IGDBGame): string {
   // For now, default to PC as we don't have platform data from IGDB
   // You could enhance this by adding platform data to the IGDB query
-  return "PC";
+  return platformOptions[0];
 }
 
 export default function AddGame() {
@@ -39,7 +39,7 @@ export default function AddGame() {
     resolver: zodResolver(insertGameSchema),
     defaultValues: {
       name: "",
-      platform: "",
+      platform: platformOptions[0],
       purchaseDate: new Date(),
       releaseDate: null,
       coverUrl: null,
